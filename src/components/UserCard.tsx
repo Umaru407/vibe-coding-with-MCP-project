@@ -1,26 +1,23 @@
-"use client";
+import { auth } from "@/lib/auth";
+import { headers } from "next/headers";
+import Link from "next/link";
+import { signOut } from "@/actions/auth-actions";
 
-import { authClient } from "@/lib/auth-client";
-import { useRouter } from "next/navigation";
-
-export default function UserCard({ session }: { session: any }) {
-  const router = useRouter();
-
-  const handleSignOut = async () => {
-    await authClient.signOut();
-    router.refresh();
-  };
+export default async function UserCard() {
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
 
   if (!session) {
     return (
       <div className="flex flex-col gap-4">
-        <p>You are not signed in.</p>
-        <button
-          onClick={() => router.push("/auth")}
-          className="rounded-md bg-indigo-600 px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
+        <p>您尚未登入。</p>
+        <Link
+          href="/auth"
+          className="rounded-md bg-indigo-600 px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 text-center"
         >
-          Sign In
-        </button>
+          登入
+        </Link>
       </div>
     );
   }
@@ -44,12 +41,14 @@ export default function UserCard({ session }: { session: any }) {
           </p>
         </div>
       </div>
-      <button
-        onClick={handleSignOut}
-        className="rounded-md bg-red-600 px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-red-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600"
-      >
-        Sign Out
-      </button>
+      <form action={signOut}>
+        <button
+          type="submit"
+          className="rounded-md bg-red-600 px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-red-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600"
+        >
+          登出
+        </button>
+      </form>
     </div>
   );
 }
