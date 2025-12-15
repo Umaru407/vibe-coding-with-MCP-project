@@ -1,14 +1,27 @@
 import UserCard from "@/components/UserCard";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default async function Home() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50 font-sans dark:bg-black">
-      <main className="flex w-full max-w-3xl flex-col items-center justify-between p-24 bg-white dark:bg-gray-900 rounded-lg shadow-xl">
-        <h1 className="text-4xl font-bold mb-8 text-indigo-600">
-          Better Auth + Supabase
-        </h1>
-        <UserCard />
-      </main>
+    <div className="flex min-h-screen items-center justify-center bg-background px-4 py-12">
+      <div className="relative w-full max-w-3xl">
+        {/* 主題切換按鈕 - 右上角 */}
+        <div className="absolute -top-12 right-0">
+          <ThemeToggle />
+        </div>
+
+        <Card className="shadow-lg">
+          <CardHeader>
+            <CardTitle className="text-center text-4xl">
+              Better Auth + Supabase
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="flex justify-center">
+            <UserCard />
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }
