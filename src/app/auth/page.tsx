@@ -6,15 +6,27 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { isRedirectError } from "next/dist/client/components/redirect-error";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { AlertCircle } from "lucide-react";
 
 const signInSchema = z.object({
-  email: z.email("請輸入有效的電子郵件"),
+  email: z.string().email("請輸入有效的電子郵件"),
   password: z.string().min(1, "請輸入密碼"),
 });
 
 const signUpSchema = z.object({
   name: z.string().min(1, "請輸入姓名"),
-  email: z.email("請輸入有效的電子郵件"),
+  email: z.string().email("請輸入有效的電子郵件"),
   password: z.string().min(8, "密碼長度至少需 8 個字元"),
 });
 
@@ -70,101 +82,102 @@ export default function AuthPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4 py-12 sm:px-6 lg:px-8">
-      <div className="w-full max-w-md space-y-8 rounded-lg bg-white p-8 shadow-lg">
-        <div>
-          <h2 className="mt-6 text-center text-3xl font-bold tracking-tight text-gray-900">
+    <div className="flex min-h-screen items-center justify-center bg-background px-4 py-12 sm:px-6 lg:px-8">
+      <Card className="w-full max-w-md">
+        <CardHeader className="space-y-1">
+          <CardTitle className="text-2xl font-bold text-center">
             {isSignUp ? "建立您的帳號" : "登入您的帳號"}
-          </h2>
-        </div>
-        <form
-          className="mt-8 space-y-6"
-          onSubmit={handleSubmit(onSubmit)}
-          key={isSignUp ? "signup" : "signin"}
-        >
-          {error && (
-            <div className="rounded-md bg-red-50 p-4 text-sm text-red-700">
-              {error}
-            </div>
-          )}
-          <div className="space-y-4 rounded-md shadow-sm">
-            {isSignUp && (
-              <div>
-                <label htmlFor="name" className="sr-only">
-                  姓名
-                </label>
-                <input
-                  id="name"
-                  type="text"
-                  className="relative block w-full rounded-md border-0 py-1.5 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:z-10 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 px-3"
-                  placeholder="姓名"
-                  {...register("name" as any)}
+          </CardTitle>
+          <CardDescription className="text-center">
+            {isSignUp ? "填寫以下資訊以建立新帳號" : "輸入您的帳號資訊以登入"}
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form
+            className="space-y-4"
+            onSubmit={handleSubmit(onSubmit)}
+            key={isSignUp ? "signup" : "signin"}
+          >
+            {error && (
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
+
+            <div className="space-y-4">
+              {isSignUp && (
+                <div className="space-y-2">
+                  <Label htmlFor="name">姓名</Label>
+                  <Input
+                    id="name"
+                    type="text"
+                    placeholder="請輸入您的姓名"
+                    {...register("name" as any)}
+                    className={
+                      errors && (errors as any).name ? "border-destructive" : ""
+                    }
+                  />
+                  {isSignUp && errors && (errors as any).name && (
+                    <p className="text-sm text-destructive">
+                      {(errors as any).name.message}
+                    </p>
+                  )}
+                </div>
+              )}
+
+              <div className="space-y-2">
+                <Label htmlFor="email-address">電子郵件</Label>
+                <Input
+                  id="email-address"
+                  type="email"
+                  autoComplete="email"
+                  placeholder="name@example.com"
+                  {...register("email")}
+                  className={errors.email ? "border-destructive" : ""}
                 />
-                {isSignUp && errors && (errors as any).name && (
-                  <p className="mt-1 text-xs text-red-600">
-                    {(errors as any).name.message}
+                {errors.email && (
+                  <p className="text-sm text-destructive">
+                    {errors.email.message}
                   </p>
                 )}
               </div>
-            )}
-            <div>
-              <label htmlFor="email-address" className="sr-only">
-                電子郵件
-              </label>
-              <input
-                id="email-address"
-                type="email"
-                autoComplete="email"
-                className="relative block w-full rounded-md border-0 py-1.5 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:z-10 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 px-3"
-                placeholder="電子郵件"
-                {...register("email")}
-              />
-              {errors.email && (
-                <p className="mt-1 text-xs text-red-600">
-                  {errors.email.message}
-                </p>
-              )}
-            </div>
-            <div>
-              <label htmlFor="password" className="sr-only">
-                密碼
-              </label>
-              <input
-                id="password"
-                type="password"
-                autoComplete="current-password"
-                className="relative block w-full rounded-md border-0 py-1.5 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:z-10 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 px-3"
-                placeholder="密碼"
-                {...register("password")}
-              />
-              {errors.password && (
-                <p className="mt-1 text-xs text-red-600">
-                  {errors.password.message}
-                </p>
-              )}
-            </div>
-          </div>
 
-          <div>
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="group relative flex w-full justify-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed"
+              <div className="space-y-2">
+                <Label htmlFor="password">密碼</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  autoComplete="current-password"
+                  placeholder="請輸入密碼"
+                  {...register("password")}
+                  className={errors.password ? "border-destructive" : ""}
+                />
+                {errors.password && (
+                  <p className="text-sm text-destructive">
+                    {errors.password.message}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            <Button type="submit" disabled={isSubmitting} className="w-full">
+              {isSubmitting ? "登入中..." : isSignUp ? "註冊" : "登入"}
+            </Button>
+          </form>
+
+          <div className="mt-4 text-center">
+            <Button
+              type="button"
+              variant="link"
+              onClick={toggleMode}
+              className="text-sm"
             >
-              {isSubmitting ? "處理中..." : isSignUp ? "註冊" : "登入"}
-            </button>
+              {isSignUp ? "已有帳號？登入" : "沒有帳號？註冊"}
+            </Button>
           </div>
-        </form>
-        <div className="text-center">
-          <button
-            type="button"
-            className="text-sm text-indigo-600 hover:text-indigo-500"
-            onClick={toggleMode}
-          >
-            {isSignUp ? "已有帳號？登入" : "沒有帳號？註冊"}
-          </button>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

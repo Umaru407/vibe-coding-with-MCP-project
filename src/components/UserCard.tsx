@@ -2,6 +2,7 @@ import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import Link from "next/link";
 import { signOut } from "@/actions/auth-actions";
+import { Button } from "./ui/button";
 
 export default async function UserCard() {
   const session = await auth.api.getSession({
@@ -10,44 +11,34 @@ export default async function UserCard() {
 
   if (!session) {
     return (
-      <div className="flex flex-col gap-4">
-        <p>您尚未登入。</p>
-        <Link
-          href="/auth"
-          className="rounded-md bg-indigo-600 px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 text-center"
-        >
-          登入
-        </Link>
+      <div className="flex flex-col gap-4 items-center">
+        <p className="text-muted-foreground">您尚未登入。</p>
+        <Button asChild>
+          <Link href="/auth">登入</Link>
+        </Button>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col gap-4 items-center">
+    <div className="flex flex-col gap-6 items-center">
       <div className="flex items-center gap-4">
         {session.user.image && (
           <img
             src={session.user.image}
             alt={session.user.name}
-            className="h-12 w-12 rounded-full"
+            className="h-12 w-12 rounded-full ring-2 ring-border"
           />
         )}
         <div className="text-left">
-          <p className="font-semibold text-gray-900 dark:text-white">
-            {session.user.name}
-          </p>
-          <p className="text-sm text-gray-500 dark:text-gray-400">
-            {session.user.email}
-          </p>
+          <p className="font-semibold text-foreground">{session.user.name}</p>
+          <p className="text-sm text-muted-foreground">{session.user.email}</p>
         </div>
       </div>
       <form action={signOut}>
-        <button
-          type="submit"
-          className="rounded-md bg-red-600 px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-red-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600"
-        >
+        <Button type="submit" variant="destructive">
           登出
-        </button>
+        </Button>
       </form>
     </div>
   );
