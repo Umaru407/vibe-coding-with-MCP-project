@@ -13,9 +13,7 @@ export default async function Home() {
 
         <Card className="shadow-lg">
           <CardHeader>
-            <CardTitle className="text-center text-4xl">
-              Better Auth + Supabase
-            </CardTitle>
+            <CardTitle className="text-center text-2xl">用戶資訊</CardTitle>
           </CardHeader>
           <CardContent className="flex justify-center">
             <UserCard />
