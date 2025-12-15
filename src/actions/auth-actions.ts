@@ -66,11 +66,41 @@ export async function signInWithGoogle() {
   const { redirect: shouldRedirect, url } = await auth.api.signInSocial({
     body: {
       provider: "google",
-      callbackURL: "/",
+      callbackURL: "/auth/callback",
     },
   });
 
   if (shouldRedirect && url) {
     redirect(url);
   }
+}
+
+export async function setPassword(formData: FormData): Promise<ActionState> {
+  const password = formData.get("password") as string;
+  const confirmPassword = formData.get("confirmPassword") as string;
+
+  if (!password || password.length < 8) {
+    return { error: "密碼長度至少需 8 個字元" };
+  }
+
+  if (password !== confirmPassword) {
+    return { error: "確認密碼不一致" };
+  }
+
+  try {
+    const headersList = await headers();
+    await auth.api.setPassword({
+      body: {
+        newPassword: password,
+      },
+      headers: headersList,
+    });
+  } catch (error) {
+    if (error instanceof APIError) {
+      return { error: error.message };
+    }
+    return { error: "設定密碼失敗，請稍後再試" };
+  }
+
+  redirect("/");
 }
