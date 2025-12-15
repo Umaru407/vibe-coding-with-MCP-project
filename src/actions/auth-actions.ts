@@ -19,10 +19,7 @@ export async function signOut() {
   redirect("/auth");
 }
 
-export async function signIn(
-  prevState: ActionState,
-  formData: FormData
-): Promise<ActionState> {
+export async function signIn(formData: FormData): Promise<ActionState> {
   const email = formData.get("email") as string;
   const password = formData.get("password") as string;
 
@@ -43,10 +40,7 @@ export async function signIn(
   redirect("/");
 }
 
-export async function signUp(
-  prevState: ActionState,
-  formData: FormData
-): Promise<ActionState> {
+export async function signUp(formData: FormData): Promise<ActionState> {
   const email = formData.get("email") as string;
   const password = formData.get("password") as string;
   const name = formData.get("name") as string;
@@ -65,6 +59,5 @@ export async function signUp(
     }
     return { error: "註冊失敗，請稍後再試", email, name };
   }
-
   redirect("/");
 }
