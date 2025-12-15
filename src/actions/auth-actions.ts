@@ -61,3 +61,16 @@ export async function signUp(formData: FormData): Promise<ActionState> {
   }
   redirect("/");
 }
+
+export async function signInWithGoogle() {
+  const { redirect: shouldRedirect, url } = await auth.api.signInSocial({
+    body: {
+      provider: "google",
+      callbackURL: "/",
+    },
+  });
+
+  if (shouldRedirect && url) {
+    redirect(url);
+  }
+}
