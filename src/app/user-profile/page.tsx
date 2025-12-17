@@ -1,6 +1,6 @@
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
-import { withUserAuth } from "@/components/auth-hoc";
+import { withUserAuth } from "@/lib/auth-hoc";
 
 /**
  * 使用者個人資料頁面

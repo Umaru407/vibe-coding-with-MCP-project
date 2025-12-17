@@ -1,4 +1,4 @@
-import { withAdminAuth } from "@/components/auth-hoc";
+import { withAdminAuth } from "@/lib/auth-hoc";
 
 /**
  * Admin 專屬頁面

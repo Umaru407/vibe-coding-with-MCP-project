@@ -2,7 +2,7 @@ import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import Link from "next/link";
 import { signOut } from "@/actions/auth-actions";
-import { Button } from "./ui/button";
+import { Button } from "../ui/button";
 
 export default async function UserCard() {
   const session = await auth.api.getSession({
@@ -36,9 +36,7 @@ export default async function UserCard() {
         </div>
       </div>
       <form action={signOut}>
-        <Button type="submit" variant="destructive">
-          登出
-        </Button>
+        <Button type="submit">登出</Button>
       </form>
     </div>
   );

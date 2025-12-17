@@ -20,6 +20,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
 import { authClient } from "@/lib/auth-client";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 const signInSchema = z.object({
   email: z.string().email("請輸入有效的電子郵件"),
@@ -38,6 +39,7 @@ type SignUpFormData = z.infer<typeof signUpSchema>;
 export default function AuthPage() {
   const { isSignUp, setIsSignUp, setError, error } = useAuthStore();
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+  const router = useRouter();
 
   const {
     register,
@@ -67,6 +69,9 @@ export default function AuthPage() {
       const result = await action(formData);
       if (result?.error) {
         setError(result.error);
+      } else {
+        // 登入成功，刷新路由以更新 session
+        router.refresh();
       }
     } catch (error) {
       // 檢查是否為 Next.js 的 redirect 錯誤
