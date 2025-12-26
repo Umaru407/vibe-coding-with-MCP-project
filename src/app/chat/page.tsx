@@ -19,6 +19,7 @@ import {
   PromptInputTextarea,
   type PromptInputMessage,
 } from "@/components/ai-elements/prompt-input";
+import { WeatherCard } from "@/components/weather-card";
 
 export default function ChatPage() {
   const [input, setInput] = useState("");
@@ -44,24 +45,56 @@ export default function ChatPage() {
             />
           ) : (
             messages.map((message) => {
-              // Extract text content from parts to handle multi-modal messages or standard structural changes
-              const content = message.parts
-                ? message.parts
-                    .filter((part) => part.type === "text")
-                    .map((part) => part.text)
-                    .join("")
-                : "";
-
               return (
-                <Message
-                  key={message.id}
-                  from={message.role === "user" ? "user" : "assistant"}
-                >
+                <Message key={message.id} from={message.role}>
                   <MessageContent>
                     {message.role === "user" ? (
-                      content
+                      // 使用者訊息：直接顯示文字內容
+                      <>
+                        {message.parts
+                          ?.filter((part) => part.type === "text")
+                          .map((part, idx) => (
+                            <span key={idx}>{part.text}</span>
+                          ))}
+                      </>
                     ) : (
-                      <MessageResponse>{content}</MessageResponse>
+                      // AI 訊息：處理文字和工具調用
+                      <>
+                        {/* 顯示文字部分 */}
+                        {message.parts
+                          ?.filter((part) => part.type === "text")
+                          .map((part) => part.text)
+                          .join("") && (
+                          <MessageResponse>
+                            {message.parts
+                              ?.filter((part) => part.type === "text")
+                              .map((part) => part.text)
+                              .join("")}
+                          </MessageResponse>
+                        )}
+
+                        {/* 顯示工具調用結果 */}
+                        {message.parts?.map((part, idx) => {
+                          if (
+                            part.type === "tool-displayWeather" &&
+                            part.state === "output-available"
+                          ) {
+                            return (
+                              <WeatherCard
+                                key={idx}
+                                data={
+                                  part.output as {
+                                    weather: string;
+                                    temperature: number;
+                                    location: string;
+                                  }
+                                }
+                              />
+                            );
+                          }
+                          return null;
+                        })}
+                      </>
                     )}
                   </MessageContent>
                 </Message>

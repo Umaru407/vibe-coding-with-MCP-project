@@ -1,5 +1,6 @@
 import { streamText, UIMessage, convertToModelMessages } from "ai";
 import { createGoogleGenerativeAI, google } from "@ai-sdk/google";
+import { tools } from "@/lib/ai/tools";
 
 export const maxDuration = 30;
 
@@ -18,9 +19,10 @@ export async function POST(req: Request) {
   const result = streamText({
     model: google("gemini-2.5-flash-lite"),
     messages: convertToModelMessages(messages),
+    tools: tools,
   });
 
-  console.log("result", result);
+  // console.log("result", result);
 
   return result.toUIMessageStreamResponse();
 }
