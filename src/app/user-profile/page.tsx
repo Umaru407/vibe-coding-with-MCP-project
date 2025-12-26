@@ -15,7 +15,7 @@ async function UserProfilePage() {
   return (
     <div className="p-8">
       <h1 className="text-2xl font-bold mb-4">使用者個人資料</h1>
-      <div className="bg-card p-6 rounded-lg shadow-sm border">
+      <div className="bg-card p-6 rounded-lg shadow-sm border h-[1200px]">
         <p className="text-lg">
           歡迎，<span className="font-semibold">{session!.user.name}</span>！
         </p>
