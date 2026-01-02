@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { MessageSquarePlus, Trash2, Menu, X } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { Chat } from "@/types/chat";
+import type { Chat } from "@/types/db";
 
 interface ChatSidebarProps {
   className?: string;
@@ -29,7 +29,7 @@ export function ChatSidebar({ className }: ChatSidebarProps) {
 
   const fetchChats = async () => {
     try {
-      const response = await fetch("/api/chats");
+      const response = await fetch("/api/history");
       if (response.ok) {
         const data = await response.json();
         setChats(data.chats);
@@ -41,22 +41,9 @@ export function ChatSidebar({ className }: ChatSidebarProps) {
     }
   };
 
-  const handleNewChat = async () => {
-    try {
-      const response = await fetch("/api/chats", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title: "新對話" }),
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        router.push(`/chat/${data.chat.id}`);
-        fetchChats(); // 重新載入列表
-      }
-    } catch (error) {
-      console.error("Failed to create chat:", error);
-    }
+  const handleNewChat = () => {
+    // 直接導航到 /chat，讓使用者在發送第一則訊息時才建立聊天
+    router.push("/chat");
   };
 
   const handleDeleteChat = async (chatId: string, e: React.MouseEvent) => {
@@ -67,7 +54,7 @@ export function ChatSidebar({ className }: ChatSidebarProps) {
     }
 
     try {
-      const response = await fetch(`/api/chats/${chatId}`, {
+      const response = await fetch(`/api/history/${chatId}`, {
         method: "DELETE",
       });
 
@@ -111,7 +98,7 @@ export function ChatSidebar({ className }: ChatSidebarProps) {
           </Button>
         </div>
 
-        <ScrollArea className="flex-1">
+        <ScrollArea className="flex-1 max-h-full">
           <div className="p-2 space-y-1">
             {loading ? (
               <div className="text-sm text-muted-foreground p-4 text-center">
@@ -136,7 +123,7 @@ export function ChatSidebar({ className }: ChatSidebarProps) {
                       {chat.title}
                     </div>
                     <div className="text-xs text-muted-foreground">
-                      {new Date(chat.created_at).toLocaleDateString("zh-TW")}
+                      {new Date(chat.createdAt).toLocaleDateString("zh-TW")}
                     </div>
                   </div>
                   <Button
