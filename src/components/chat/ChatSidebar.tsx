@@ -1,153 +1,97 @@
-"use client";
-
-import { useState, useEffect } from "react";
-import { useRouter, usePathname } from "next/navigation";
-import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { MessageSquarePlus, Trash2, Menu, X } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { Suspense } from "react";
+import { headers } from "next/headers";
+import { auth } from "@/lib/auth";
+import { getUserChats } from "@/lib/db/chat";
 import type { Chat } from "@/types/db";
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarHeader,
+  SidebarFooter,
+  SidebarGroup,
+  SidebarGroupLabel,
+  SidebarGroupContent,
+  SidebarMenu,
+  SidebarMenuItem,
+  SidebarMenuSkeleton,
+  SidebarTrigger,
+} from "@/components/ui/sidebar";
+import { ChatList } from "./ChatList";
+import { NewChatButton } from "./NewChatButton";
 
 interface ChatSidebarProps {
   className?: string;
 }
 
-export function ChatSidebar({ className }: ChatSidebarProps) {
-  const [chats, setChats] = useState<Chat[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [isOpen, setIsOpen] = useState(true);
-  const router = useRouter();
-  const pathname = usePathname();
-
-  // 從路徑中提取目前的 chatId
-  const currentChatId = pathname.split("/").pop();
-
-  // 載入聊天列表
-  useEffect(() => {
-    fetchChats();
-  }, []);
-
-  const fetchChats = async () => {
-    try {
-      const response = await fetch("/api/history");
-      if (response.ok) {
-        const data = await response.json();
-        setChats(data.chats);
-      }
-    } catch (error) {
-      console.error("Failed to fetch chats:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleNewChat = () => {
-    // 直接導航到 /chat，讓使用者在發送第一則訊息時才建立聊天
-    router.push("/chat");
-  };
-
-  const handleDeleteChat = async (chatId: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-
-    if (!confirm("確定要刪除這個對話嗎？")) {
-      return;
-    }
-
-    try {
-      const response = await fetch(`/api/history/${chatId}`, {
-        method: "DELETE",
-      });
-
-      if (response.ok) {
-        setChats(chats.filter((chat) => chat.id !== chatId));
-        // 如果刪除的是目前的聊天，導航到新聊天
-        if (chatId === currentChatId) {
-          router.push("/chat");
-        }
-      }
-    } catch (error) {
-      console.error("Failed to delete chat:", error);
-    }
-  };
-
+/**
+ * 聊天列表骨架 - 載入中顯示
+ */
+function ChatListSkeleton() {
   return (
-    <>
-      {/* 手機版開關按鈕 */}
-      <Button
-        variant="ghost"
-        size="icon"
-        className="md:hidden fixed top-4 left-4 z-50"
-        onClick={() => setIsOpen(!isOpen)}
-      >
-        {isOpen ? <X /> : <Menu />}
-      </Button>
+    <SidebarMenu>
+      {Array.from({ length: 5 }).map((_, i) => (
+        <SidebarMenuItem key={i}>
+          <SidebarMenuSkeleton showIcon />
+        </SidebarMenuItem>
+      ))}
+    </SidebarMenu>
+  );
+}
 
-      {/* 側邊欄 */}
-      <div
-        className={cn(
-          "flex flex-col h-full bg-background border-r transition-all duration-300",
-          isOpen ? "w-64" : "w-0 md:w-64",
-          "md:relative absolute inset-y-0 left-0 z-40",
-          className
-        )}
-      >
-        <div className="p-4 border-b">
-          <Button onClick={handleNewChat} className="w-full" variant="default">
-            <MessageSquarePlus className="mr-2 h-4 w-4" />
-            新對話
-          </Button>
-        </div>
+/**
+ * 聊天列表資料獲取 - Server Component (async)
+ * 在伺服器端直接獲取使用者的聊天列表
+ */
+async function ChatListData() {
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
 
-        <ScrollArea className="flex-1 max-h-full">
-          <div className="p-2 space-y-1">
-            {loading ? (
-              <div className="text-sm text-muted-foreground p-4 text-center">
-                載入中...
-              </div>
-            ) : chats.length === 0 ? (
-              <div className="text-sm text-muted-foreground p-4 text-center">
-                還沒有對話
-              </div>
-            ) : (
-              chats.map((chat) => (
-                <div
-                  key={chat.id}
-                  className={cn(
-                    "group flex items-center justify-between p-3 rounded-lg cursor-pointer hover:bg-accent transition-colors",
-                    currentChatId === chat.id && "bg-accent"
-                  )}
-                  onClick={() => router.push(`/chat/${chat.id}`)}
-                >
-                  <div className="flex-1 truncate">
-                    <div className="text-sm font-medium truncate">
-                      {chat.title}
-                    </div>
-                    <div className="text-xs text-muted-foreground">
-                      {new Date(chat.createdAt).toLocaleDateString("zh-TW")}
-                    </div>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="opacity-0 group-hover:opacity-100 transition-opacity h-8 w-8"
-                    onClick={(e) => handleDeleteChat(chat.id, e)}
-                  >
-                    <Trash2 className="h-4 w-4 text-destructive" />
-                  </Button>
-                </div>
-              ))
-            )}
-          </div>
-        </ScrollArea>
+  if (!session?.user) {
+    return (
+      <div className="text-sm text-muted-foreground p-4 text-center group-data-[collapsible=icon]:hidden">
+        請先登入
       </div>
+    );
+  }
 
-      {/* 手機版遮罩 */}
-      {isOpen && (
-        <div
-          className="md:hidden fixed inset-0 bg-black/20 z-30"
-          onClick={() => setIsOpen(false)}
-        />
-      )}
-    </>
+  const chats: Chat[] = await getUserChats(session.user.id);
+  return <ChatList initialChats={chats} />;
+}
+
+/**
+ * 聊天側邊欄 - Server Component
+ * 使用 Suspense 搭配 Skeleton 處理非同步資料載入
+ */
+export function ChatSidebar({ className }: ChatSidebarProps) {
+  return (
+    <Sidebar collapsible="icon" className={className}>
+      <SidebarHeader className="p-2">
+        <SidebarMenu>
+          <SidebarMenuItem className="flex justify-end">
+            <SidebarTrigger />
+          </SidebarMenuItem>
+        </SidebarMenu>
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <NewChatButton />
+          </SidebarMenuItem>
+        </SidebarMenu>
+      </SidebarHeader>
+
+      <SidebarContent className="group-data-[collapsible=icon]:overflow-auto group-data-[collapsible=icon]:no-scrollbar">
+        <SidebarGroup>
+          <SidebarGroupLabel>對話紀錄</SidebarGroupLabel>
+          <SidebarGroupContent>
+            {/* 使用 Suspense 包裹異步資料獲取，Skeleton 作為 fallback */}
+            <Suspense fallback={<ChatListSkeleton />}>
+              <ChatListData />
+            </Suspense>
+          </SidebarGroupContent>
+        </SidebarGroup>
+      </SidebarContent>
+
+      {/* <SidebarFooter className="p-2" /> */}
+    </Sidebar>
   );
 }

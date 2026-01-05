@@ -1,8 +1,14 @@
 @import "tailwindcss";
 @import "tw-animate-css";
+@utility no-scrollbar {
+  @apply [scrollbar-width:none] [&::-webkit-scrollbar]:hidden;
+}
 
 @custom-variant dark (&:is(.dark *));
 :root {
+  --sb-track-color: #232e33;
+  --sb-thumb-color: #575858;
+  --sb-size: 8px;
   --background: oklch(1 0 0);
   --foreground: oklch(0.23 0 325.86);
   --card: oklch(0.98 0 0);
@@ -161,5 +167,16 @@
   }
   body {
     @apply bg-background text-foreground;
+    ::-webkit-scrollbar {
+      width: var(--sb-size);
+    }
+    ::-webkit-scrollbar-track {
+      background: var(--sb-track-color);
+      border-radius: 5px;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: var(--sb-thumb-color);
+      border-radius: 5px;
+    }
   }
 }

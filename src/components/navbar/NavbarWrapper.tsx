@@ -17,8 +17,6 @@ export function NavbarWrapper() {
   }, [pathname, refetch]);
 
   const handleUserItemClick = async (item: string) => {
-    console.log("User clicked:", item);
-
     switch (item) {
       case "profile":
         router.push("/user-profile");

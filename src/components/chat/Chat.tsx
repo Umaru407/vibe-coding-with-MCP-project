@@ -1,9 +1,12 @@
 "use client";
 
 import { useChat } from "@ai-sdk/react";
-import { DefaultChatTransport, generateId, UIMessage } from "ai";
+import { DefaultChatTransport, UIMessage } from "ai";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { AiStatusIndicator } from "./AiStatusIndicator";
+import { useQueryClient } from "@tanstack/react-query";
+import type { Chat as ChatType } from "@/types/db";
 import {
   Conversation,
   ConversationContent,
@@ -21,7 +24,6 @@ import {
   type PromptInputMessage,
 } from "@/components/ai-elements/prompt-input";
 import { WeatherCard } from "@/components/weather-card";
-import { generateUUID } from "@/lib/utils";
 
 export default function Chat({
   id,
@@ -30,16 +32,16 @@ export default function Chat({
   id?: string;
   initialMessages?: UIMessage[];
 }) {
+  const queryClient = useQueryClient();
   const { messages, sendMessage, error, status, setMessages } =
     useChat<UIMessage>({
       id,
       transport: new DefaultChatTransport({
-        api: `/api/chat`,
+        api: `/api/chat/${id}`,
       }),
       messages: initialMessages,
-
-      onFinish: (response) => {
-        // console.log("response", response);
+      onFinish: (_response) => {
+        queryClient.invalidateQueries({ queryKey: ["chats"] });
       },
     });
 
@@ -49,8 +51,6 @@ export default function Chat({
   // Handle browser back/forward navigation
   useEffect(() => {
     const handlePopState = () => {
-      console.log("handlePopState");
-
       // When user navigates back/forward, refresh to sync with URL
       router.refresh();
     };
@@ -64,33 +64,51 @@ export default function Chat({
     message: PromptInputMessage
   ) => {
     const currentPath = window.location.pathname;
-    if (currentPath !== `/chat/${id}`) {
+
+    // 如果是新對話 List 樂觀更新
+    if (id && currentPath === "/chat") {
       window.history.pushState({}, "", `/chat/${id}`);
+
+      queryClient.setQueryData(["chats"], (oldData: any) => {
+        if (!oldData) return oldData;
+
+        const newChat: ChatType = {
+          id: id,
+          title: "New chat",
+          createdAt: new Date(),
+          userId: "",
+        };
+
+        // 將新對話插入到第一頁的最前面
+        const newPages = [...oldData.pages];
+        if (newPages.length > 0) {
+          newPages[0] = [newChat, ...newPages[0]];
+        } else {
+          newPages[0] = [newChat];
+        }
+
+        return {
+          ...oldData,
+          pages: newPages,
+        };
+      });
     }
 
-    sendMessage(
-      { text: message.text },
-      {
-        body: {
-          id, // 在發送訊息時傳遞 chatId
-        },
-      }
-    );
-
+    sendMessage({ text: message.text });
     setInput("");
   };
 
   return (
-    <div className="flex flex-col w-full h-full max-w-4xl mx-auto p-4 gap-4">
+    <div className="flex flex-col w-full h-full mx-auto ">
       <Conversation>
-        <ConversationContent>
+        <ConversationContent className="max-w-4xl mx-auto p-4 *:last:mb-10">
           {messages.length === 0 ? (
             <ConversationEmptyState
               title="開始與 AI 對話"
               description="輸入訊息開始聊天"
             />
           ) : (
-            messages.map((message) => {
+            messages.map((message, idx) => {
               return (
                 <Message key={message.id} from={message.role}>
                   <MessageContent>
@@ -105,47 +123,72 @@ export default function Chat({
                       </>
                     ) : (
                       // AI 訊息：處理文字和工具調用
-                      <>
-                        {/* 顯示文字部分 */}
-                        {message.parts
-                          ?.filter((part) => part.type === "text")
-                          .map((part) => part.text)
-                          .join("") && (
-                          <MessageResponse>
-                            {message.parts
-                              ?.filter((part) => part.type === "text")
-                              .map((part) => part.text)
-                              .join("")}
-                          </MessageResponse>
-                        )}
-
-                        {/* 顯示工具調用結果 */}
-                        {message.parts?.map((part, idx) => {
-                          if (
-                            part.type === "tool-displayWeather" &&
-                            part.state === "output-available"
-                          ) {
-                            return (
-                              <WeatherCard
-                                key={idx}
-                                data={
-                                  part.output as {
-                                    weather: string;
-                                    temperature: number;
-                                    location: string;
-                                  }
-                                }
-                              />
-                            );
+                      <div className="flex flex-row items-start gap-4">
+                        <AiStatusIndicator
+                          status={
+                            idx === messages.length - 1 &&
+                            status === "streaming"
+                              ? "streaming"
+                              : "completed"
                           }
-                          return null;
-                        })}
-                      </>
+                        />
+                        <div className="flex flex-col gap-1 overflow-hidden min-w-0 max-w-full">
+                          {/* 顯示文字部分 */}
+                          {message.parts
+                            ?.filter((part) => part.type === "text")
+                            .map((part) => part.text)
+                            .join("") && (
+                            <MessageResponse>
+                              {message.parts
+                                ?.filter((part) => part.type === "text")
+                                .map((part) => part.text)
+                                .join("")}
+                            </MessageResponse>
+                          )}
+
+                          {/* 顯示工具調用結果 */}
+                          {message.parts?.map((part, idx) => {
+                            if (
+                              part.type === "tool-displayWeather" &&
+                              part.state === "output-available"
+                            ) {
+                              return (
+                                <WeatherCard
+                                  key={idx}
+                                  data={
+                                    part.output as {
+                                      weather: string;
+                                      temperature: number;
+                                      location: string;
+                                    }
+                                  }
+                                />
+                              );
+                            }
+                            return null;
+                          })}
+                        </div>
+                      </div>
                     )}
                   </MessageContent>
                 </Message>
               );
             })
+          )}
+
+          {(status === "submitted" ||
+            (status === "streaming" &&
+              messages[messages.length - 1]?.role === "user")) && (
+            <Message from="assistant">
+              <MessageContent>
+                <div className="flex flex-row items-start gap-4">
+                  <AiStatusIndicator status="streaming" />
+                  <div className="flex flex-col gap-1 overflow-hidden min-w-0 max-w-full">
+                    {/* Placeholder or empty div to maintain layout */}
+                  </div>
+                </div>
+              </MessageContent>
+            </Message>
           )}
 
           {status === "error" && (
@@ -155,19 +198,19 @@ export default function Chat({
             </div>
           )}
         </ConversationContent>
+
         <ConversationScrollButton />
       </Conversation>
 
-      <PromptInput
-        onSubmit={handleSubmit}
-        className="sticky bottom-4 bg-background"
-      >
-        <PromptInputTextarea
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          placeholder="輸入訊息..."
-        />
-      </PromptInput>
+      <div className="sticky w-full bottom-0 z-10 px-4 pb-4 md:px-12 md:pb-6 before:absolute before:bottom-full before:left-0 before:w-full before:h-24 before:bg-linear-to-t before:from-background before:from-5% before:to-transparent before:to-80% before:content-[''] before:pointer-events-none">
+        <PromptInput onSubmit={handleSubmit}>
+          <PromptInputTextarea
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            placeholder="輸入訊息..."
+          />
+        </PromptInput>
+      </div>
     </div>
   );
 }

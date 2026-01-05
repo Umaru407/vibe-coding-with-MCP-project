@@ -83,14 +83,14 @@ export function withAuth<P extends object>(
 }
 
 /**
- * 便捷函數：只允許 admin 訪問
+ * 只允許 admin 訪問
  */
 export function withAdminAuth<P extends object>(Component: ComponentType<P>) {
   return withAuth(Component, { allowedRoles: ["admin"] });
 }
 
 /**
- * 便捷函數：允許已登入的使用者訪問
+ * 允許已登入的使用者訪問
  */
 export function withUserAuth<P extends object>(Component: ComponentType<P>) {
   return withAuth(Component, { allowedRoles: ["admin", "user"] });

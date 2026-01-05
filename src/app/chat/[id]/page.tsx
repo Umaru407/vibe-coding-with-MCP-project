@@ -1,24 +1,37 @@
+import { getChatMessages } from "@/lib/db/chat";
+import { convertToUIMessages } from "@/lib/utils";
+import Chat from "@/components/chat/Chat";
 import { Suspense } from "react";
-import { ChatLoader } from "./ChatLoader";
 
-export default async function ChatPage({
+export default async function Page({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const { id } = await params;
-
   return (
-    <Suspense fallback={<ChatLoadingFallback />}>
-      <ChatLoader chatId={id} />
+    <Suspense fallback={<ChatPageSkeleton />}>
+      <ChatPage params={params} />
     </Suspense>
   );
 }
 
-function ChatLoadingFallback() {
+/**
+ * 聊天頁面 - Async Server Component
+ * 直接在伺服器端 await 獲取資料
+ */
+async function ChatPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  // await new Promise((resolve) => setTimeout(resolve, 10000));
+  const messagesFromDb = await getChatMessages(id);
+  const uiMessages = convertToUIMessages(messagesFromDb as any);
+
+  return <Chat initialMessages={uiMessages} id={id} />;
+}
+
+function ChatPageSkeleton() {
   return (
-    <div className="flex items-center justify-center h-full">
-      <div className="text-muted-foreground animate-pulse">載入對話中...</div>
+    <div className="flex items-center justify-center h-full animate-pulse">
+      聊天紀錄載入中...
     </div>
   );
 }

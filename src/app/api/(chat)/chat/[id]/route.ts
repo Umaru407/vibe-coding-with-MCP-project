@@ -1,24 +1,20 @@
 import { streamText, UIMessage, convertToModelMessages, generateId } from "ai";
-import { createGoogleGenerativeAI, google } from "@ai-sdk/google";
 import { tools } from "@/lib/ai/tools";
 import { saveMessage, getChatById, saveChat } from "@/lib/db/chat";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
-import { generateUUID } from "@/lib/utils";
 import { createOpenRouter } from "@openrouter/ai-sdk-provider";
+import { generateTitleFromUserMessage } from "@/app/actions/ai";
 
-export const maxDuration = 30;
+export async function POST(
+  req: Request,
+  { params }: { params: { id: string } }
+) {
+  const { messages }: { messages: UIMessage[] } = await req.json();
+  const { id: chatId } = await params;
 
-export async function POST(req: Request) {
-  const {
-    messages,
-    id: chatId,
-    ...rest
-  }: { messages: UIMessage[]; id: string } = await req.json();
-
-  const geminiApiKey = process.env.GEMINI_API_KEY;
   const openrouterApiKey = process.env.OPENROUTER_API_KEY;
-  if (!geminiApiKey && !openrouterApiKey) {
+  if (!openrouterApiKey) {
     throw new Error("API Key is missing.");
   }
   // 驗證使用者
@@ -43,7 +39,7 @@ export async function POST(req: Request) {
       const newChat = await saveChat({
         chatId: chatId,
         userId: userId,
-        title: "New chat",
+        title: await generateTitleFromUserMessage({ message: userMessage }),
       });
       currentChatId = newChat.id;
     }
@@ -57,9 +53,6 @@ export async function POST(req: Request) {
     });
   }
 
-  // const google = createGoogleGenerativeAI({
-  //   apiKey: false ? "test" : geminiApiKey,
-  // });
   const openrouter = createOpenRouter({
     apiKey: openrouterApiKey,
   });

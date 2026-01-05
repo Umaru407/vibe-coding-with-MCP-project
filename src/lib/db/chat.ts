@@ -14,8 +14,6 @@ export async function saveChat({
   userId: string;
   title?: string;
 }): Promise<Chat> {
-  // console.log("chatId", chatId, "userId", userId, "title", title);
-
   const result = await pool.query<Chat>(
     `INSERT INTO chat ("id", "userId", "title") VALUES ($1, $2, $3) RETURNING *`,
     [chatId, userId, title]
@@ -26,16 +24,20 @@ export async function saveChat({
 /**
  * 取得使用者的所有聊天對話
  */
-export async function getUserChats(userId: string): Promise<Chat[]> {
+export async function getUserChats(
+  userId: string,
+  limit: number = 20,
+  offset: number = 0
+): Promise<Chat[]> {
   const result = await pool.query<Chat>(
-    `SELECT * FROM chat WHERE "userId" = $1 ORDER BY "createdAt" DESC`,
-    [userId]
+    `SELECT * FROM chat WHERE "userId" = $1 ORDER BY "createdAt" DESC LIMIT $2 OFFSET $3`,
+    [userId, limit, offset]
   );
   return result.rows;
 }
 
 /**
- * 取得特定聊天對話（含權限驗證）
+ * 取得特定聊天對話
  */
 export async function getChatById(chatId: string): Promise<Chat | null> {
   const result = await pool.query<Chat>(`SELECT * FROM chat WHERE "id" = $1`, [
@@ -71,8 +73,6 @@ export async function deleteChat(
     [chatId, userId]
   );
 
-  console.log("result", result);
-
   return result.rowCount !== null && result.rowCount > 0;
 }
 
@@ -103,8 +103,6 @@ export async function saveMessage(
 export async function getChatMessages(chatId: string): Promise<Message[]> {
   // 先驗證使用者是否有權限存取這個聊天
   const chat = await getChatById(chatId);
-
-  // console.log("chat", chat);
 
   if (!chat) {
     throw new Error("Chat not found or access denied");
