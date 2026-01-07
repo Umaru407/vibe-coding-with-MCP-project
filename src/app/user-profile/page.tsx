@@ -1,6 +1,6 @@
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
-import { withUserAuth } from "@/components/auth-hoc";
+import { withUserAuth } from "@/lib/auth-hoc";
 
 /**
  * 使用者個人資料頁面
@@ -14,8 +14,8 @@ async function UserProfilePage() {
 
   return (
     <div className="p-8">
-      <h1 className="text-2xl font-bold mb-4">使用者個人資料</h1>
-      <div className="bg-card p-6 rounded-lg shadow-sm border">
+      <h1 className="mb-4 text-2xl font-bold">使用者個人資料</h1>
+      <div className="bg-card h-[1200px] rounded-lg border p-6 shadow-sm">
         <p className="text-lg">
           歡迎，<span className="font-semibold">{session!.user.name}</span>！
         </p>
@@ -29,7 +29,7 @@ async function UserProfilePage() {
           <img
             src={session!.user.image}
             alt={session!.user.name}
-            className="w-20 h-20 rounded-full mt-4"
+            className="mt-4 h-20 w-20 rounded-full"
           />
         )}
       </div>

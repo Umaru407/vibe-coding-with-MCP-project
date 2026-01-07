@@ -20,6 +20,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
 import { authClient } from "@/lib/auth-client";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 const signInSchema = z.object({
   email: z.string().email("請輸入有效的電子郵件"),
@@ -38,6 +39,7 @@ type SignUpFormData = z.infer<typeof signUpSchema>;
 export default function AuthPage() {
   const { isSignUp, setIsSignUp, setError, error } = useAuthStore();
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+  const router = useRouter();
 
   const {
     register,
@@ -67,6 +69,9 @@ export default function AuthPage() {
       const result = await action(formData);
       if (result?.error) {
         setError(result.error);
+      } else {
+        // 登入成功，刷新路由以更新 session
+        router.refresh();
       }
     } catch (error) {
       // 檢查是否為 Next.js 的 redirect 錯誤
@@ -102,10 +107,10 @@ export default function AuthPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4 py-12 sm:px-6 lg:px-8">
+    <div className="bg-background flex w-full items-center justify-center px-4 py-12 sm:px-6 lg:px-8">
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl font-bold text-center">
+          <CardTitle className="text-center text-2xl font-bold">
             {isSignUp ? "建立您的帳號" : "登入您的帳號"}
           </CardTitle>
           <CardDescription className="text-center">
@@ -139,7 +144,7 @@ export default function AuthPage() {
                     }
                   />
                   {isSignUp && errors && (errors as any).name && (
-                    <p className="text-sm text-destructive">
+                    <p className="text-destructive text-sm">
                       {(errors as any).name.message}
                     </p>
                   )}
@@ -157,7 +162,7 @@ export default function AuthPage() {
                   className={errors.email ? "border-destructive" : ""}
                 />
                 {errors.email && (
-                  <p className="text-sm text-destructive">
+                  <p className="text-destructive text-sm">
                     {errors.email.message}
                   </p>
                 )}
@@ -174,7 +179,7 @@ export default function AuthPage() {
                   className={errors.password ? "border-destructive" : ""}
                 />
                 {errors.password && (
-                  <p className="text-sm text-destructive">
+                  <p className="text-destructive text-sm">
                     {errors.password.message}
                   </p>
                 )}
@@ -191,7 +196,7 @@ export default function AuthPage() {
               <span className="w-full border-t" />
             </div>
             <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-background px-2 text-muted-foreground">
+              <span className="bg-background text-muted-foreground px-2">
                 或
               </span>
             </div>

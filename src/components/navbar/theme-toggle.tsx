@@ -3,7 +3,7 @@
 import { Moon, Sun } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useEffect, useState } from "react";
-import { Switch } from "./switch";
+import { Switch } from "../ui/switch";
 
 export function ThemeToggle() {
   const { theme, setTheme } = useTheme();
@@ -17,9 +17,9 @@ export function ThemeToggle() {
   if (!mounted) {
     return (
       <div className="flex items-center gap-2">
-        <Sun className="h-4 w-4 text-muted-foreground" />
+        <Sun className="text-muted-foreground h-4 w-4" />
         <Switch disabled />
-        <Moon className="h-4 w-4 text-muted-foreground" />
+        <Moon className="text-muted-foreground h-4 w-4" />
       </div>
     );
   }

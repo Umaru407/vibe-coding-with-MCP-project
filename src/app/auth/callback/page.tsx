@@ -17,7 +17,7 @@ export default async function AuthCallbackPage() {
     // Check if user has password set
     const result = await pool.query(
       `SELECT * FROM account WHERE "userId" = $1 AND "providerId" = 'credential'`,
-      [session.user.id]
+      [session.user.id],
     );
 
     if (result.rows.length > 0) {
