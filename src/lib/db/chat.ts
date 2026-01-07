@@ -1,7 +1,13 @@
 import { pool } from "@/lib/db";
 import { Chat, Message } from "@/types/db";
+import { UIMessage } from "ai";
+import { drizzle } from "drizzle-orm/postgres-js";
+import postgres from "postgres";
+import { DBMessage, message } from "./schema";
+import { InferSelectModel } from "drizzle-orm";
 // import type { Chat, ChatMessage, SaveMessageInput } from "@/types/chat";
-
+const client = postgres(process.env.DATABASE_URL!);
+const db = drizzle(client);
 /**
  * 建立新的聊天對話
  */
@@ -79,22 +85,13 @@ export async function deleteChat(
 /**
  * 儲存訊息到資料庫
  */
-export async function saveMessage(
-  chatId: string,
-  message: Partial<Message>,
-): Promise<Message> {
-  const result = await pool.query<Message>(
-    `INSERT INTO message ("chatId", "role", "parts", "attachments") 
-     VALUES ($1, $2, $3, $4) 
-     RETURNING *`,
-    [
-      chatId,
-      message.role,
-      JSON.stringify(message.parts),
-      JSON.stringify(message.attachments || []),
-    ],
-  );
-  return result.rows[0];
+
+export async function saveMessage({ messages }: { messages: DBMessage[] }) {
+  try {
+    return await db.insert(message).values(messages);
+  } catch (error) {
+    throw error;
+  }
 }
 
 /**
@@ -105,7 +102,8 @@ export async function getChatMessages(chatId: string): Promise<Message[]> {
   const chat = await getChatById(chatId);
 
   if (!chat) {
-    throw new Error("Chat not found or access denied");
+    console.log("Chat not found or access denied");
+    // throw new Error("Chat not found or access denied");
   }
 
   const result = await pool.query<Message>(

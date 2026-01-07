@@ -18,11 +18,7 @@ export function getTextFromMessage(message: UIMessage): string {
     .join("");
 }
 
-export async function generateTitleFromUserMessage({
-  message,
-}: {
-  message: UIMessage;
-}) {
+export async function generateTitleFromUserMessage(message: UIMessage) {
   const { text: title } = await generateText({
     model: openrouter.chat("google/gemini-2.5-flash-lite"),
     system: titlePrompt,
