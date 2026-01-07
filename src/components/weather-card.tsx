@@ -28,9 +28,9 @@ export function WeatherCard({ data }: WeatherProps) {
   };
 
   return (
-    <Card className="w-full max-w-sm bg-gradient-to-br from-blue-50 to-blue-100 dark:from-slate-900 dark:to-slate-800 border-none shadow-lg overflow-hidden">
+    <Card className="w-full max-w-sm overflow-hidden border-none bg-gradient-to-br from-blue-50 to-blue-100 shadow-lg dark:from-slate-900 dark:to-slate-800">
       <CardHeader className="pb-2">
-        <CardTitle className="flex justify-between items-center text-lg font-medium text-slate-700 dark:text-slate-200">
+        <CardTitle className="flex items-center justify-between text-lg font-medium text-slate-700 dark:text-slate-200">
           <span>{location}</span>
           <Wind className="h-5 w-5 text-slate-400" />
         </CardTitle>
@@ -41,11 +41,11 @@ export function WeatherCard({ data }: WeatherProps) {
             <span className="text-4xl font-bold text-slate-900 dark:text-white">
               {temperature}°
             </span>
-            <span className="text-sm text-slate-500 dark:text-slate-400 capitalize">
+            <span className="text-sm text-slate-500 capitalize dark:text-slate-400">
               {weather}
             </span>
           </div>
-          <div className="bg-white/50 dark:bg-slate-700/50 p-4 rounded-full shadow-inner">
+          <div className="rounded-full bg-white/50 p-4 shadow-inner dark:bg-slate-700/50">
             {getWeatherIcon(weather)}
           </div>
         </div>

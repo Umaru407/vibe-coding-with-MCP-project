@@ -9,7 +9,7 @@ import { NextResponse } from "next/server";
  */
 export async function DELETE(
   request: Request,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     // 驗證使用者身份
@@ -29,7 +29,7 @@ export async function DELETE(
     if (!deleted) {
       return NextResponse.json(
         { error: "Chat not found or you don't have permission to delete it" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -41,7 +41,7 @@ export async function DELETE(
     console.error("Error deleting chat:", error);
     return NextResponse.json(
       { error: "Internal Server Error" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

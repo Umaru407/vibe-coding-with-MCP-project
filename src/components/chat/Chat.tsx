@@ -61,7 +61,7 @@ export default function Chat({
 
   const handleSubmit = (
     // e: React.FormEvent<HTMLFormElement>,
-    message: PromptInputMessage
+    message: PromptInputMessage,
   ) => {
     const currentPath = window.location.pathname;
 
@@ -99,9 +99,9 @@ export default function Chat({
   };
 
   return (
-    <div className="flex flex-col w-full h-full mx-auto ">
+    <div className="mx-auto flex h-full w-full flex-col">
       <Conversation>
-        <ConversationContent className="max-w-4xl mx-auto p-4 *:last:mb-10">
+        <ConversationContent className="mx-auto max-w-4xl p-4 *:last:mb-10">
           {messages.length === 0 ? (
             <ConversationEmptyState
               title="開始與 AI 對話"
@@ -132,7 +132,7 @@ export default function Chat({
                               : "completed"
                           }
                         />
-                        <div className="flex flex-col gap-1 overflow-hidden min-w-0 max-w-full">
+                        <div className="flex max-w-full min-w-0 flex-col gap-1 overflow-hidden">
                           {/* 顯示文字部分 */}
                           {message.parts
                             ?.filter((part) => part.type === "text")
@@ -183,7 +183,7 @@ export default function Chat({
               <MessageContent>
                 <div className="flex flex-row items-start gap-4">
                   <AiStatusIndicator status="streaming" />
-                  <div className="flex flex-col gap-1 overflow-hidden min-w-0 max-w-full">
+                  <div className="flex max-w-full min-w-0 flex-col gap-1 overflow-hidden">
                     {/* Placeholder or empty div to maintain layout */}
                   </div>
                 </div>
@@ -192,9 +192,9 @@ export default function Chat({
           )}
 
           {status === "error" && (
-            <div className="border-destructive/50 bg-destructive/10 text-destructive rounded-xl border p-4 ">
+            <div className="border-destructive/50 bg-destructive/10 text-destructive rounded-xl border p-4">
               <h3 className="text-destructive mb-2 font-bold">Error</h3>
-              <p className=" text-xs opacity-70">{error?.message}</p>
+              <p className="text-xs opacity-70">{error?.message}</p>
             </div>
           )}
         </ConversationContent>
@@ -202,7 +202,7 @@ export default function Chat({
         <ConversationScrollButton />
       </Conversation>
 
-      <div className="sticky w-full bottom-0 z-10 px-4 pb-4 md:px-12 md:pb-6 before:absolute before:bottom-full before:left-0 before:w-full before:h-24 before:bg-linear-to-t before:from-background before:from-5% before:to-transparent before:to-80% before:content-[''] before:pointer-events-none">
+      <div className="before:from-background sticky bottom-0 z-10 w-full px-4 pb-4 before:pointer-events-none before:absolute before:bottom-full before:left-0 before:h-24 before:w-full before:bg-linear-to-t before:from-5% before:to-transparent before:to-80% before:content-[''] md:px-12 md:pb-6">
         <PromptInput onSubmit={handleSubmit}>
           <PromptInputTextarea
             value={input}

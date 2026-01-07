@@ -43,7 +43,7 @@ export interface AuthConfig {
  */
 export function withAuth<P extends object>(
   Component: ComponentType<P>,
-  config: AuthConfig = {}
+  config: AuthConfig = {},
 ) {
   const {
     allowedRoles,

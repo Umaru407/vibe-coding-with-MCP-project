@@ -49,7 +49,7 @@ async function ChatListData() {
 
   if (!session?.user) {
     return (
-      <div className="text-sm text-muted-foreground p-4 text-center group-data-[collapsible=icon]:hidden">
+      <div className="text-muted-foreground p-4 text-center text-sm group-data-[collapsible=icon]:hidden">
         請先登入
       </div>
     );
@@ -79,7 +79,7 @@ export function ChatSidebar({ className }: ChatSidebarProps) {
         </SidebarMenu>
       </SidebarHeader>
 
-      <SidebarContent className="group-data-[collapsible=icon]:overflow-auto group-data-[collapsible=icon]:no-scrollbar">
+      <SidebarContent className="group-data-[collapsible=icon]:no-scrollbar group-data-[collapsible=icon]:overflow-auto">
         <SidebarGroup>
           <SidebarGroupLabel>對話紀錄</SidebarGroupLabel>
           <SidebarGroupContent>

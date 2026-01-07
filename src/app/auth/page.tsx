@@ -107,10 +107,10 @@ export default function AuthPage() {
   };
 
   return (
-    <div className="flex w-full items-center justify-center bg-background px-4 py-12 sm:px-6 lg:px-8">
+    <div className="bg-background flex w-full items-center justify-center px-4 py-12 sm:px-6 lg:px-8">
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl font-bold text-center">
+          <CardTitle className="text-center text-2xl font-bold">
             {isSignUp ? "建立您的帳號" : "登入您的帳號"}
           </CardTitle>
           <CardDescription className="text-center">
@@ -144,7 +144,7 @@ export default function AuthPage() {
                     }
                   />
                   {isSignUp && errors && (errors as any).name && (
-                    <p className="text-sm text-destructive">
+                    <p className="text-destructive text-sm">
                       {(errors as any).name.message}
                     </p>
                   )}
@@ -162,7 +162,7 @@ export default function AuthPage() {
                   className={errors.email ? "border-destructive" : ""}
                 />
                 {errors.email && (
-                  <p className="text-sm text-destructive">
+                  <p className="text-destructive text-sm">
                     {errors.email.message}
                   </p>
                 )}
@@ -179,7 +179,7 @@ export default function AuthPage() {
                   className={errors.password ? "border-destructive" : ""}
                 />
                 {errors.password && (
-                  <p className="text-sm text-destructive">
+                  <p className="text-destructive text-sm">
                     {errors.password.message}
                   </p>
                 )}
@@ -196,7 +196,7 @@ export default function AuthPage() {
               <span className="w-full border-t" />
             </div>
             <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-background px-2 text-muted-foreground">
+              <span className="bg-background text-muted-foreground px-2">
                 或
               </span>
             </div>

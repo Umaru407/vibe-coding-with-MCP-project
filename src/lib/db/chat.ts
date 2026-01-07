@@ -16,7 +16,7 @@ export async function saveChat({
 }): Promise<Chat> {
   const result = await pool.query<Chat>(
     `INSERT INTO chat ("id", "userId", "title") VALUES ($1, $2, $3) RETURNING *`,
-    [chatId, userId, title]
+    [chatId, userId, title],
   );
   return result.rows[0];
 }
@@ -27,11 +27,11 @@ export async function saveChat({
 export async function getUserChats(
   userId: string,
   limit: number = 20,
-  offset: number = 0
+  offset: number = 0,
 ): Promise<Chat[]> {
   const result = await pool.query<Chat>(
     `SELECT * FROM chat WHERE "userId" = $1 ORDER BY "createdAt" DESC LIMIT $2 OFFSET $3`,
-    [userId, limit, offset]
+    [userId, limit, offset],
   );
   return result.rows;
 }
@@ -52,11 +52,11 @@ export async function getChatById(chatId: string): Promise<Chat | null> {
 export async function updateChatTitle(
   chatId: string,
   userId: string,
-  title: string
+  title: string,
 ): Promise<Chat | null> {
   const result = await pool.query<Chat>(
     `UPDATE chat SET "title" = $1 WHERE "id" = $2 AND "userId" = $3 RETURNING *`,
-    [title, chatId, userId]
+    [title, chatId, userId],
   );
   return result.rows[0] || null;
 }
@@ -66,11 +66,11 @@ export async function updateChatTitle(
  */
 export async function deleteChat(
   chatId: string,
-  userId: string
+  userId: string,
 ): Promise<boolean> {
   const result = await pool.query(
     `DELETE FROM chat WHERE "id" = $1 AND "userId" = $2`,
-    [chatId, userId]
+    [chatId, userId],
   );
 
   return result.rowCount !== null && result.rowCount > 0;
@@ -81,7 +81,7 @@ export async function deleteChat(
  */
 export async function saveMessage(
   chatId: string,
-  message: Partial<Message>
+  message: Partial<Message>,
 ): Promise<Message> {
   const result = await pool.query<Message>(
     `INSERT INTO message ("chatId", "role", "parts", "attachments") 
@@ -92,7 +92,7 @@ export async function saveMessage(
       message.role,
       JSON.stringify(message.parts),
       JSON.stringify(message.attachments || []),
-    ]
+    ],
   );
   return result.rows[0];
 }
@@ -110,7 +110,7 @@ export async function getChatMessages(chatId: string): Promise<Message[]> {
 
   const result = await pool.query<Message>(
     `SELECT * FROM message WHERE "chatId" = $1 ORDER BY "createdAt" ASC`,
-    [chatId]
+    [chatId],
   );
   return result.rows;
 }

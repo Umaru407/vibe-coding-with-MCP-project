@@ -8,7 +8,7 @@ import { generateTitleFromUserMessage } from "@/app/actions/ai";
 
 export async function POST(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: { id: string } },
 ) {
   const { messages }: { messages: UIMessage[] } = await req.json();
   const { id: chatId } = await params;

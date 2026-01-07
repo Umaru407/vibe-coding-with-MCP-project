@@ -30,7 +30,7 @@ async function ChatPage({ params }: { params: Promise<{ id: string }> }) {
 
 function ChatPageSkeleton() {
   return (
-    <div className="flex items-center justify-center h-full animate-pulse">
+    <div className="flex h-full animate-pulse items-center justify-center">
       聊天紀錄載入中...
     </div>
   );

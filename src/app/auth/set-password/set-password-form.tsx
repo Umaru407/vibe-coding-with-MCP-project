@@ -65,10 +65,10 @@ export default function SetPasswordForm() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4 py-12 sm:px-6 lg:px-8">
+    <div className="bg-background flex min-h-screen items-center justify-center px-4 py-12 sm:px-6 lg:px-8">
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl font-bold text-center">
+          <CardTitle className="text-center text-2xl font-bold">
             設定密碼
           </CardTitle>
           <CardDescription className="text-center">
@@ -94,7 +94,7 @@ export default function SetPasswordForm() {
                 className={errors.password ? "border-destructive" : ""}
               />
               {errors.password && (
-                <p className="text-sm text-destructive">
+                <p className="text-destructive text-sm">
                   {errors.password.message}
                 </p>
               )}
@@ -110,7 +110,7 @@ export default function SetPasswordForm() {
                 className={errors.confirmPassword ? "border-destructive" : ""}
               />
               {errors.confirmPassword && (
-                <p className="text-sm text-destructive">
+                <p className="text-destructive text-sm">
                   {errors.confirmPassword.message}
                 </p>
               )}

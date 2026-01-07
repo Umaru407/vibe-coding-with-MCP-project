@@ -10,7 +10,7 @@ export function AiStatusIndicator({ status }: AiStatusIndicatorProps) {
   if (status === "streaming") {
     return (
       <motion.div
-        className="h-4 w-4 shrink-0 rounded-full border-2 border-primary bg-primary/20"
+        className="border-primary bg-primary/20 h-4 w-4 shrink-0 rounded-full border-2"
         animate={{
           scale: [0.8, 1, 0.8],
           opacity: [0.5, 1, 0.5],
@@ -25,6 +25,6 @@ export function AiStatusIndicator({ status }: AiStatusIndicatorProps) {
   }
 
   return (
-    <div className="h-4 w-4 shrink-0 rounded-full border-2 border-primary bg-primary/20" />
+    <div className="border-primary bg-primary/20 h-4 w-4 shrink-0 rounded-full border-2" />
   );
 }

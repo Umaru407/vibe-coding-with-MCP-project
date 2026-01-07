@@ -75,7 +75,7 @@ export function ChatList({ initialChats }: ChatListProps) {
 
   const chats = useMemo(
     () => data?.pages.flatMap((page) => page) ?? [],
-    [data]
+    [data],
   );
 
   // 處理刪除 mutation
@@ -96,7 +96,7 @@ export function ChatList({ initialChats }: ChatListProps) {
         return {
           ...oldData,
           pages: oldData.pages.map((page: Chat[]) =>
-            page.filter((chat) => chat.id !== deletedChatId)
+            page.filter((chat) => chat.id !== deletedChatId),
           ),
         };
       });
@@ -121,7 +121,7 @@ export function ChatList({ initialChats }: ChatListProps) {
           fetchNextPage();
         }
       },
-      { threshold: 1.0 }
+      { threshold: 1.0 },
     );
 
     if (observerTarget.current) {
@@ -153,7 +153,7 @@ export function ChatList({ initialChats }: ChatListProps) {
 
   if (status === "success" && chats.length === 0) {
     return (
-      <div className="text-sm text-muted-foreground p-4 text-center group-data-[collapsible=icon]:hidden">
+      <div className="text-muted-foreground p-4 text-center text-sm group-data-[collapsible=icon]:hidden">
         還沒有對話
       </div>
     );
@@ -181,9 +181,9 @@ export function ChatList({ initialChats }: ChatListProps) {
             >
               {deleteMutation.isPending &&
               deleteMutation.variables === chat.id ? (
-                <Loader2 className="h-4 w-4 animate-spin text-destructive" />
+                <Loader2 className="text-destructive h-4 w-4 animate-spin" />
               ) : (
-                <Trash2 className="h-4 w-4 text-destructive" />
+                <Trash2 className="text-destructive h-4 w-4" />
               )}
               <span className="sr-only">刪除</span>
             </SidebarMenuAction>
@@ -191,9 +191,9 @@ export function ChatList({ initialChats }: ChatListProps) {
         ))}
       </SidebarMenu>
       {hasNextPage && (
-        <div ref={observerTarget} className="p-4 flex justify-center">
+        <div ref={observerTarget} className="flex justify-center p-4">
           {isFetchingNextPage ? (
-            <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+            <Loader2 className="text-muted-foreground h-4 w-4 animate-spin" />
           ) : (
             <div className="h-4" /> // Placeholder for observer
           )}
