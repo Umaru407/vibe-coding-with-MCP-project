@@ -1,0 +1,244 @@
+"use client";
+
+import { signIn, signUp, signInWithGoogle } from "@/actions/auth-actions";
+import { useAuthStore } from "@/store/useAuthStore";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { isRedirectError } from "next/dist/client/components/redirect-error";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { AlertCircle } from "lucide-react";
+import { authClient } from "@/lib/auth-client";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+
+const signInSchema = z.object({
+  email: z.string().email("請輸入有效的電子郵件"),
+  password: z.string().min(1, "請輸入密碼"),
+});
+
+const signUpSchema = z.object({
+  name: z.string().min(1, "請輸入姓名"),
+  email: z.string().email("請輸入有效的電子郵件"),
+  password: z.string().min(8, "密碼長度至少需 8 個字元"),
+});
+
+type SignInFormData = z.infer<typeof signInSchema>;
+type SignUpFormData = z.infer<typeof signUpSchema>;
+
+export default function AuthPage() {
+  const { isSignUp, setIsSignUp, setError, error } = useAuthStore();
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+  const router = useRouter();
+
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+    reset,
+  } = useForm<SignInFormData | SignUpFormData>({
+    resolver: zodResolver(isSignUp ? signUpSchema : signInSchema),
+    defaultValues: {
+      email: "",
+      password: "",
+      ...(isSignUp ? { name: "" } : {}),
+    },
+  });
+
+  const onSubmit = async (data: SignInFormData | SignUpFormData) => {
+    setError(null);
+    const formData = new FormData();
+    formData.append("email", data.email);
+    formData.append("password", data.password);
+    if (isSignUp && "name" in data) {
+      formData.append("name", data.name);
+    }
+
+    try {
+      const action = isSignUp ? signUp : signIn;
+      const result = await action(formData);
+      if (result?.error) {
+        setError(result.error);
+      } else {
+        // 登入成功，刷新路由以更新 session
+        router.refresh();
+      }
+    } catch (error) {
+      // 檢查是否為 Next.js 的 redirect 錯誤
+      // redirect() 會拋出一個特殊的錯誤來觸發重定向,需要重新拋出它
+      if (isRedirectError(error)) {
+        throw error;
+      }
+      setError("發生未預期的錯誤,請稍後再試");
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    setError(null);
+    setIsGoogleLoading(true);
+
+    try {
+      // await authClient.signIn.social({
+      //   provider: "google",
+      //   callbackURL: "/",
+      // });
+      await signInWithGoogle();
+    } catch (error) {
+      console.error("Google sign-in error:", error);
+      setError("Google 登入失敗，請稍後再試");
+      setIsGoogleLoading(false);
+    }
+  };
+
+  const toggleMode = () => {
+    setIsSignUp(!isSignUp);
+    setError(null);
+    reset();
+  };
+
+  return (
+    <div className="bg-background flex w-full items-center justify-center px-4 py-12 sm:px-6 lg:px-8">
+      <Card className="w-full max-w-md">
+        <CardHeader className="space-y-1">
+          <CardTitle className="text-center text-2xl font-bold">
+            {isSignUp ? "建立您的帳號" : "登入您的帳號"}
+          </CardTitle>
+          <CardDescription className="text-center">
+            {isSignUp ? "填寫以下資訊以建立新帳號" : "輸入您的帳號資訊以登入"}
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form
+            className="space-y-4"
+            onSubmit={handleSubmit(onSubmit)}
+            key={isSignUp ? "signup" : "signin"}
+          >
+            {error && (
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
+
+            <div className="space-y-4">
+              {isSignUp && (
+                <div className="space-y-2">
+                  <Label htmlFor="name">姓名</Label>
+                  <Input
+                    id="name"
+                    type="text"
+                    placeholder="請輸入您的姓名"
+                    {...register("name" as any)}
+                    className={
+                      errors && (errors as any).name ? "border-destructive" : ""
+                    }
+                  />
+                  {isSignUp && errors && (errors as any).name && (
+                    <p className="text-destructive text-sm">
+                      {(errors as any).name.message}
+                    </p>
+                  )}
+                </div>
+              )}
+
+              <div className="space-y-2">
+                <Label htmlFor="email-address">電子郵件</Label>
+                <Input
+                  id="email-address"
+                  type="email"
+                  autoComplete="email"
+                  placeholder="name@example.com"
+                  {...register("email")}
+                  className={errors.email ? "border-destructive" : ""}
+                />
+                {errors.email && (
+                  <p className="text-destructive text-sm">
+                    {errors.email.message}
+                  </p>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="password">密碼</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  autoComplete="current-password"
+                  placeholder="請輸入密碼"
+                  {...register("password")}
+                  className={errors.password ? "border-destructive" : ""}
+                />
+                {errors.password && (
+                  <p className="text-destructive text-sm">
+                    {errors.password.message}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            <Button type="submit" disabled={isSubmitting} className="w-full">
+              {isSubmitting ? "登入中..." : isSignUp ? "註冊" : "登入"}
+            </Button>
+          </form>
+
+          <div className="relative my-4">
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-background text-muted-foreground px-2">
+                或
+              </span>
+            </div>
+          </div>
+
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full"
+            onClick={handleGoogleSignIn}
+            disabled={isGoogleLoading || isSubmitting}
+          >
+            <svg
+              className="mr-2 h-4 w-4"
+              aria-hidden="true"
+              focusable="false"
+              data-prefix="fab"
+              data-icon="google"
+              role="img"
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 488 512"
+            >
+              <path
+                fill="currentColor"
+                d="M488 261.8C488 403.3 391.1 504 248 504 110.8 504 0 393.2 0 256S110.8 8 248 8c66.8 0 123 24.5 166.3 64.9l-67.5 64.9C258.5 52.6 94.3 116.6 94.3 256c0 86.5 69.1 156.6 153.7 156.6 98.2 0 135-70.4 140.8-106.9H248v-85.3h236.1c2.3 12.7 3.9 24.9 3.9 41.4z"
+              ></path>
+            </svg>
+            {isGoogleLoading ? "登入中..." : "使用 Google 登入"}
+          </Button>
+
+          <div className="mt-4 text-center">
+            <Button
+              type="button"
+              variant="link"
+              onClick={toggleMode}
+              className="text-sm"
+            >
+              {isSignUp ? "已有帳號？登入" : "沒有帳號？註冊"}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
