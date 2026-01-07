@@ -354,7 +354,7 @@ export const Navbar = React.forwardRef<HTMLElement, NavbarProps>(
               >
                 <div className="text-2xl">{logo}</div>
                 <span className="hidden text-xl font-bold sm:inline-block">
-                  shadcn.io
+                  Umaru
                 </span>
               </button>
               {/* Navigation menu */}

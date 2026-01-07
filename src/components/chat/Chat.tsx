@@ -1,6 +1,7 @@
 "use client";
 
 import { useChat } from "@ai-sdk/react";
+import { motion } from "motion/react";
 import { DefaultChatTransport, UIMessage } from "ai";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -23,7 +24,10 @@ import {
   PromptInputTextarea,
   type PromptInputMessage,
 } from "@/components/ai-elements/prompt-input";
-import { WeatherCard } from "@/components/weather-card";
+import WeatherCard from "@/components/WeatherCard";
+import { useChatInputContext } from "./ChatInputContext";
+import { generateUUID } from "@/lib/utils";
+import { GoogleWeatherData } from "@/types/weather";
 
 export default function Chat({
   id,
@@ -33,31 +37,47 @@ export default function Chat({
   initialMessages?: UIMessage[];
 }) {
   const queryClient = useQueryClient();
-  const { messages, sendMessage, error, status, setMessages } =
-    useChat<UIMessage>({
-      id,
-      transport: new DefaultChatTransport({
-        api: `/api/chat/${id}`,
-      }),
-      messages: initialMessages,
-      onFinish: (_response) => {
-        queryClient.invalidateQueries({ queryKey: ["chats"] });
+  const { messages, sendMessage, error, status } = useChat<UIMessage>({
+    id,
+    generateId: generateUUID,
+    transport: new DefaultChatTransport({
+      api: "/api/chat",
+      prepareSendMessagesRequest(request) {
+        return {
+          body: {
+            chatId: request.id,
+            message: request.messages.at(-1),
+            ...request.body,
+          },
+        };
       },
-    });
+    }),
+    messages: initialMessages,
+    onFinish: (_response) => {
+      queryClient.invalidateQueries({ queryKey: ["chats"] });
+    },
+  });
 
-  const [input, setInput] = useState("");
+  const { setInput, setIsLoading, registerSubmitHandler } =
+    useChatInputContext();
 
   const router = useRouter();
   // Handle browser back/forward navigation
   useEffect(() => {
     const handlePopState = () => {
       // When user navigates back/forward, refresh to sync with URL
+      console.log("handlePopState");
       router.refresh();
     };
 
     window.addEventListener("popstate", handlePopState);
     return () => window.removeEventListener("popstate", handlePopState);
   }, [router]);
+
+  // Sync loading status
+  useEffect(() => {
+    setIsLoading(status === "streaming" || status === "submitted");
+  }, [status, setIsLoading]);
 
   const handleSubmit = (
     // e: React.FormEvent<HTMLFormElement>,
@@ -68,6 +88,7 @@ export default function Chat({
     // 如果是新對話 List 樂觀更新
     if (id && currentPath === "/chat") {
       window.history.pushState({}, "", `/chat/${id}`);
+      console.log("pushState");
 
       queryClient.setQueryData(["chats"], (oldData: any) => {
         if (!oldData) return oldData;
@@ -98,8 +119,18 @@ export default function Chat({
     setInput("");
   };
 
+  // Register the submit handler so the context can call it
+  useEffect(() => {
+    registerSubmitHandler(handleSubmit);
+  }, [registerSubmitHandler, messages, id, sendMessage, queryClient]); // Dependencies might need tuning, but handleSubmit is stable enough if we didn't use closure variables... wait, handleSubmit USES closure variables. so we do need to re-register.
+
   return (
-    <div className="mx-auto flex h-full w-full flex-col">
+    <motion.div
+      className="mx-auto flex h-full w-full flex-col"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5, ease: "easeOut" }}
+    >
       <Conversation>
         <ConversationContent className="mx-auto max-w-4xl p-4 *:last:mb-10">
           {messages.length === 0 ? (
@@ -148,6 +179,7 @@ export default function Chat({
 
                           {/* 顯示工具調用結果 */}
                           {message.parts?.map((part, idx) => {
+                            // 工具執行成功
                             if (
                               part.type === "tool-displayWeather" &&
                               part.state === "output-available"
@@ -155,14 +187,28 @@ export default function Chat({
                               return (
                                 <WeatherCard
                                   key={idx}
-                                  data={
-                                    part.output as {
-                                      weather: string;
-                                      temperature: number;
-                                      location: string;
-                                    }
-                                  }
+                                  weatherData={part.output as GoogleWeatherData}
                                 />
+                              );
+                            }
+                            // 工具執行失敗
+                            if (
+                              part.type === "tool-displayWeather" &&
+                              part.state === "output-error"
+                            ) {
+                              return (
+                                <div
+                                  key={idx}
+                                  className="border-destructive/50 bg-destructive/10 text-destructive rounded-xl border p-4"
+                                >
+                                  <h4 className="font-semibold">
+                                    天氣查詢失敗
+                                  </h4>
+                                  <p className="text-sm opacity-70">
+                                    {part.errorText ||
+                                      "無法取得天氣資訊，請稍後再試"}
+                                  </p>
+                                </div>
                               );
                             }
                             return null;
@@ -201,16 +247,6 @@ export default function Chat({
 
         <ConversationScrollButton />
       </Conversation>
-
-      <div className="before:from-background sticky bottom-0 z-10 w-full px-4 pb-4 before:pointer-events-none before:absolute before:bottom-full before:left-0 before:h-24 before:w-full before:bg-linear-to-t before:from-5% before:to-transparent before:to-80% before:content-[''] md:px-12 md:pb-6">
-        <PromptInput onSubmit={handleSubmit}>
-          <PromptInputTextarea
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            placeholder="輸入訊息..."
-          />
-        </PromptInput>
-      </div>
-    </div>
+    </motion.div>
   );
 }

@@ -1,5 +1,3 @@
-"use client";
-
 import Chat from "@/components/chat/Chat";
 import { generateUUID } from "@/lib/utils";
 
