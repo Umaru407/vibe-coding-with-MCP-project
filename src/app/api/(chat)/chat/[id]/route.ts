@@ -46,11 +46,20 @@ export async function POST(
   }
   // 儲存使用者訊息
   if (userMessage?.role === "user" && currentChatId) {
-    await saveMessage(currentChatId, {
-      role: userMessage.role,
-      parts: userMessage.parts || [],
-      attachments: [],
+    console.log("userMessage", userMessage);
+    await saveMessage({
+      messages: [
+        {
+          chatId: currentChatId,
+          id: userMessage.id,
+          role: "user",
+          parts: userMessage.parts,
+          attachments: [],
+          createdAt: new Date().toISOString(),
+        },
+      ],
     });
+    console.log("userMessage saved");
   }
 
   const openrouter = createOpenRouter({
@@ -61,21 +70,33 @@ export async function POST(
     model: openrouter.chat("google/gemini-2.5-flash-lite"),
     messages: convertToModelMessages(messages),
     tools: tools,
-    async onFinish({ response }) {
-      // 儲存助理回應（所有完成的訊息）
-      if (currentChatId && response.messages.length > 0) {
-        for (const message of response.messages) {
-          if (message.role === "assistant") {
-            await saveMessage(currentChatId, {
-              role: message.role,
-              parts: message.content,
-              attachments: [],
-            });
-          }
-        }
-      }
-    },
+    // onFinish: async ({ messages }) => {
+    //   await saveMessage({
+    //     messages: messages.map((currentMessage) => ({
+    //       id: currentMessage.id,
+    //       role: currentMessage.role,
+    //       parts: currentMessage.parts,
+    //       createdAt: new Date().toISOString(),
+    //       attachments: [],
+    //       chatId: currentChatId,
+    //     })),
+    //   });
+    // },
   });
 
-  return result.toUIMessageStreamResponse();
+  return result.toUIMessageStreamResponse({
+    originalMessages: messages,
+    onFinish: ({ messages }) => {
+      saveMessage({
+        messages: messages.map((currentMessage) => ({
+          id: currentMessage.id,
+          role: currentMessage.role,
+          parts: currentMessage.parts,
+          createdAt: new Date().toISOString(),
+          attachments: [],
+          chatId: currentChatId,
+        })),
+      });
+    },
+  });
 }
