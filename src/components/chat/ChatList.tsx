@@ -1,16 +1,8 @@
 "use client";
 
-import {
-  startTransition,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  useTransition,
-} from "react";
+import { useEffect, useMemo, useRef, useState, useCallback, memo } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { MessageSquare, Trash2, Loader2 } from "lucide-react";
-import { cn } from "@/lib/utils";
 import type { Chat } from "@/types/db";
 import { getUserChatsAction } from "@/app/actions/chat";
 import {
@@ -31,6 +23,46 @@ interface ChatListProps {
   initialChats: Chat[];
 }
 
+// 聊天項目元件 - 記憶化以避免不必要的重新渲染
+const ChatItem = memo(function ChatItem({
+  chat,
+  isActive,
+  onChatClick,
+  onDeleteClick,
+  isDeleting,
+}: {
+  chat: Chat;
+  isActive: boolean;
+  onChatClick: (chatId: string) => void;
+  onDeleteClick: (chatId: string, e: React.MouseEvent) => void;
+  isDeleting: boolean;
+}) {
+  return (
+    <SidebarMenuItem key={chat.id}>
+      <SidebarMenuButton
+        isActive={isActive}
+        onClick={() => onChatClick(chat.id)}
+        tooltip={chat.title}
+      >
+        <MessageSquare className="h-4 w-4 shrink-0" />
+        <span className="truncate">{chat.title}</span>
+      </SidebarMenuButton>
+      <SidebarMenuAction
+        showOnHover
+        onClick={(e) => onDeleteClick(chat.id, e)}
+        disabled={isDeleting}
+      >
+        {isDeleting ? (
+          <Loader2 className="text-destructive h-4 w-4 animate-spin" />
+        ) : (
+          <Trash2 className="text-destructive h-4 w-4" />
+        )}
+        <span className="sr-only">刪除</span>
+      </SidebarMenuAction>
+    </SidebarMenuItem>
+  );
+});
+
 /**
  * 聊天列表 - Client Component
  * 處理聊天列表的互動邏輯：導航、刪除、optimistic updates、無限滾動 (TanStack Query)
@@ -42,7 +74,6 @@ export function ChatList({ initialChats }: ChatListProps) {
   const [chatId, setChatId] = useState<string | null>(null);
   const observerTarget = useRef<HTMLDivElement>(null);
   const { isMobile, setOpenMobile } = useSidebar();
-  const [_isPending, startTransition] = useTransition();
 
   // 從路徑中提取目前的 chatId
   const currentChatId = useMemo(() => {
@@ -60,7 +91,6 @@ export function ChatList({ initialChats }: ChatListProps) {
       queryFn: ({ pageParam = 0 }) => getUserChatsAction(pageParam, 20),
       initialPageParam: 0,
       getNextPageParam: (lastPage, allPages) => {
-        // console.log(lastPage, allPages);
         // 如果上一頁資料少於 20 筆，表示沒有更多資料了
         if (lastPage.length < 20) return undefined;
         // 下一頁的 offset 是目前所有頁面的資料總數
@@ -90,7 +120,7 @@ export function ChatList({ initialChats }: ChatListProps) {
       return chatId;
     },
     onSuccess: (deletedChatId) => {
-      // 樂觀更新 cache
+      // 使用函式式更新以確保穩定性
       queryClient.setQueryData(["chats"], (oldData: any) => {
         if (!oldData) return oldData;
         return {
@@ -133,23 +163,29 @@ export function ChatList({ initialChats }: ChatListProps) {
 
   const activeChatId = chatId ?? currentChatId;
 
-  const handleChatClick = (chatId: string) => {
-    setChatId(chatId);
-    router.push(`/chat/${chatId}`);
-    startTransition(() => {
+  // 使用 useCallback 穩定事件處理器，避免子元件不必要的重新渲染
+  const handleChatClick = useCallback(
+    (chatId: string) => {
+      setChatId(chatId);
+      router.push(`/chat/${chatId}`);
+      // router.push 本身已經使用 transition，不需要額外的 startTransition
       if (isMobile) {
         setOpenMobile(false);
       }
-    });
-  };
+    },
+    [router, isMobile, setOpenMobile],
+  );
 
-  const handleDeleteChat = (chatId: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (!confirm("確定要刪除這個對話嗎？")) {
-      return;
-    }
-    deleteMutation.mutate(chatId);
-  };
+  const handleDeleteChat = useCallback(
+    (chatId: string, e: React.MouseEvent) => {
+      e.stopPropagation();
+      if (!confirm("確定要刪除這個對話嗎？")) {
+        return;
+      }
+      deleteMutation.mutate(chatId);
+    },
+    [deleteMutation],
+  );
 
   if (status === "success" && chats.length === 0) {
     return (
@@ -163,31 +199,16 @@ export function ChatList({ initialChats }: ChatListProps) {
     <>
       <SidebarMenu>
         {chats.map((chat) => (
-          <SidebarMenuItem key={chat.id}>
-            <SidebarMenuButton
-              isActive={activeChatId === chat.id}
-              onClick={() => handleChatClick(chat.id)}
-              tooltip={chat.title}
-            >
-              <MessageSquare className="h-4 w-4 shrink-0" />
-              <span className="truncate">{chat.title}</span>
-            </SidebarMenuButton>
-            <SidebarMenuAction
-              showOnHover
-              onClick={(e) => handleDeleteChat(chat.id, e)}
-              disabled={
-                deleteMutation.isPending && deleteMutation.variables === chat.id
-              }
-            >
-              {deleteMutation.isPending &&
-              deleteMutation.variables === chat.id ? (
-                <Loader2 className="text-destructive h-4 w-4 animate-spin" />
-              ) : (
-                <Trash2 className="text-destructive h-4 w-4" />
-              )}
-              <span className="sr-only">刪除</span>
-            </SidebarMenuAction>
-          </SidebarMenuItem>
+          <ChatItem
+            key={chat.id}
+            chat={chat}
+            isActive={activeChatId === chat.id}
+            onChatClick={handleChatClick}
+            onDeleteClick={handleDeleteChat}
+            isDeleting={
+              deleteMutation.isPending && deleteMutation.variables === chat.id
+            }
+          />
         ))}
       </SidebarMenu>
       {hasNextPage && (

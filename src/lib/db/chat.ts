@@ -5,9 +5,11 @@ import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import { DBMessage, message } from "./schema";
 import { InferSelectModel } from "drizzle-orm";
-// import type { Chat, ChatMessage, SaveMessageInput } from "@/types/chat";
+import { cache } from "react";
+
 const client = postgres(process.env.DATABASE_URL!);
 const db = drizzle(client);
+
 /**
  * 建立新的聊天對話
  */
@@ -21,36 +23,45 @@ export async function saveChat({
   title?: string;
 }): Promise<Chat> {
   const result = await pool.query<Chat>(
-    `INSERT INTO chat ("id", "userId", "title") VALUES ($1, $2, $3) RETURNING *`,
+    `INSERT INTO chat ("id", "userId", "title") 
+     VALUES ($1, $2, $3) 
+     ON CONFLICT ("id") 
+     DO UPDATE SET "title" = EXCLUDED."title"
+     RETURNING *`,
     [chatId, userId, title],
   );
   return result.rows[0];
 }
 
 /**
- * 取得使用者的所有聊天對話
+ * 取得使用者的所有聊天對話 - 使用 React.cache() 進行請求去重
  */
-export async function getUserChats(
-  userId: string,
-  limit: number = 20,
-  offset: number = 0,
-): Promise<Chat[]> {
-  const result = await pool.query<Chat>(
-    `SELECT * FROM chat WHERE "userId" = $1 ORDER BY "createdAt" DESC LIMIT $2 OFFSET $3`,
-    [userId, limit, offset],
-  );
-  return result.rows;
-}
+export const getUserChats = cache(
+  async (
+    userId: string,
+    limit: number = 20,
+    offset: number = 0,
+  ): Promise<Chat[]> => {
+    const result = await pool.query<Chat>(
+      `SELECT * FROM chat WHERE "userId" = $1 ORDER BY "createdAt" DESC LIMIT $2 OFFSET $3`,
+      [userId, limit, offset],
+    );
+    return result.rows;
+  },
+);
 
 /**
- * 取得特定聊天對話
+ * 取得特定聊天對話 - 使用 React.cache() 進行請求去重
  */
-export async function getChatById(chatId: string): Promise<Chat | null> {
-  const result = await pool.query<Chat>(`SELECT * FROM chat WHERE "id" = $1`, [
-    chatId,
-  ]);
-  return result.rows[0] || null;
-}
+export const getChatById = cache(
+  async (chatId: string): Promise<Chat | null> => {
+    const result = await pool.query<Chat>(
+      `SELECT * FROM chat WHERE "id" = $1`,
+      [chatId],
+    );
+    return result.rows[0] || null;
+  },
+);
 
 /**
  * 更新聊天標題
@@ -85,7 +96,6 @@ export async function deleteChat(
 /**
  * 儲存訊息到資料庫
  */
-
 export async function saveMessage({ messages }: { messages: DBMessage[] }) {
   try {
     return await db.insert(message).values(messages);
@@ -95,20 +105,15 @@ export async function saveMessage({ messages }: { messages: DBMessage[] }) {
 }
 
 /**
- * 取得聊天的所有訊息
+ * 取得聊天的所有訊息 - 使用 React.cache() 進行請求去重
+ * 移除了不必要的 chat 驗證，權限檢查應在 API 路由層處理
  */
-export async function getChatMessages(chatId: string): Promise<Message[]> {
-  // 先驗證使用者是否有權限存取這個聊天
-  const chat = await getChatById(chatId);
-
-  if (!chat) {
-    console.log("Chat not found or access denied");
-    // throw new Error("Chat not found or access denied");
-  }
-
-  const result = await pool.query<Message>(
-    `SELECT * FROM message WHERE "chatId" = $1 ORDER BY "createdAt" ASC`,
-    [chatId],
-  );
-  return result.rows;
-}
+export const getChatMessages = cache(
+  async (chatId: string): Promise<Message[]> => {
+    const result = await pool.query<Message>(
+      `SELECT * FROM message WHERE "chatId" = $1 ORDER BY "createdAt" ASC`,
+      [chatId],
+    );
+    return result.rows;
+  },
+);

@@ -28,16 +28,18 @@ export async function POST(req: Request) {
     if (!openrouterApiKey) {
       throw new Error("API Key is missing.");
     }
-    // 驗證使用者
-    const session = await auth.api.getSession({
-      headers: await headers(),
-    });
+
+    // 並行化獨立的異步操作：驗證使用者和取得 chat
+    const [session, chat] = await Promise.all([
+      auth.api.getSession({
+        headers: await headers(),
+      }),
+      getChatById(chatId),
+    ]);
 
     if (!session?.user) {
       return new Response("Unauthorized", { status: 401 });
     }
-
-    const chat = await getChatById(chatId);
 
     // 如果有 chatId，驗證使用者是否有權限存取
     if (chat) {
@@ -45,14 +47,28 @@ export async function POST(req: Request) {
         return new Response("Unauthorized", { status: 401 });
       }
     } else {
-      //new chat
-      const title = await generateTitleFromUserMessage(message);
+      // 新對話 - 使用臨時標題，背景生成真正的標題
+      // 先建立聊天記錄以便立即開始對話
       await saveChat({
         chatId: chatId,
         userId: session.user.id,
-        title: title,
+        title: "New chat",
+      });
+
+      // 背景生成標題並更新（不阻塞串流回應）
+      generateTitleFromUserMessage(message).then((title) => {
+        // 異步更新標題，不等待結果
+        saveChat({
+          chatId: chatId,
+          userId: session.user.id,
+          title: title,
+        }).catch((error) => {
+          console.error("Failed to update chat title:", error);
+        });
       });
     }
+
+    // 先儲存使用者訊息
     await saveMessage({
       messages: [
         {
@@ -66,7 +82,10 @@ export async function POST(req: Request) {
       ],
     });
 
-    const uiMessages = convertToUIMessages(await getChatMessages(chatId));
+    // 然後取得包含新訊息的完整歷史
+    const chatMessages = await getChatMessages(chatId);
+
+    const uiMessages = convertToUIMessages(chatMessages);
 
     const openrouter = createOpenRouter({
       apiKey: openrouterApiKey,

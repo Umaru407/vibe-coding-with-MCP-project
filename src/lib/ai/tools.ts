@@ -2,10 +2,25 @@ import { GoogleWeatherData } from "@/types/weather";
 import { tool as createTool } from "ai";
 import { z } from "zod";
 
+// 地理編碼快取 - module-level Map
+const geocodeCache = new Map<
+  string,
+  { latitude: number; longitude: number; timestamp: number }
+>();
+const CACHE_EXPIRY_MS = 24 * 60 * 60 * 1000; // 24 小時
+
 async function geocodeCity(
   city: string,
 ): Promise<{ latitude: number; longitude: number } | null> {
   try {
+    // 檢查快取
+    const cacheKey = city.toLowerCase();
+    const cached = geocodeCache.get(cacheKey);
+    if (cached && Date.now() - cached.timestamp < CACHE_EXPIRY_MS) {
+      console.log(`Using cached geocode for: ${city}`);
+      return { latitude: cached.latitude, longitude: cached.longitude };
+    }
+
     const response = await fetch(
       `https://maps.googleapis.com/maps/api/geocode/json?address=${city}&key=${process.env.GOOGLE_API_KEY}`,
       {
@@ -24,10 +39,18 @@ async function geocodeCity(
     }
 
     const result = data.results[0];
-    return {
+    const coords = {
       latitude: result.geometry.location.lat,
       longitude: result.geometry.location.lng,
     };
+
+    // 儲存到快取
+    geocodeCache.set(cacheKey, {
+      ...coords,
+      timestamp: Date.now(),
+    });
+
+    return coords;
   } catch {
     return null;
   }
